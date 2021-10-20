@@ -1,0 +1,6 @@
+a, b, c: INT;
+ASSERT (a < b);
+ASSERT (b < c);
+QUERY (a < c);
+QUERY (c <= a);
+COUNTERMODEL; 
