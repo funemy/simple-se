@@ -26,6 +26,12 @@ class SymbolicExecutor(ast.NodeVisitor):
         self.visit(self.program)
         print("end symbolic evaluation")
 
+    # ###################################################### # 
+    #                                                        #
+    # Visitor functions below for generating SMT constraints #
+    #                                                        #
+    # ###################################################### #
+
     # save all function definitions into the context
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self.funcs[node.name] = node
