@@ -22,12 +22,21 @@ class SymbolicExecutor(ast.NodeVisitor):
         if len(ops) == 1 and len(right) == 1:
             return left == '__name__' and right[0] == '__main__'
 
+    # resolve constant or variable value
+    def resolve(self, val):
+        if isinstance(val, int):
+            return val
+        elif isinstance(val, str):
+            return self.curctx[val]
+    
     def eval_builtin(self, node: ast.Call, name: str) -> Any:
         if name == 'len':
             arg_name = self.visit(node.args[0])
-            print("eval len")
-            print(self.curctx[arg_name])
             return len(self.curctx[arg_name])
+        elif name == 'range':
+            args = list(map(self.visit, node.args))
+            assert(len(args) == 2)
+            return list(range(self.resolve(args[0]), self.resolve(args[1])))
 
     def eval(self) -> None:
         print("start symbolic evaluation")
@@ -52,6 +61,7 @@ class SymbolicExecutor(ast.NodeVisitor):
             # we found the main entry
             # start construct SMT constraints
             self.constraints = []
+            self.constraints.append("A: TYPE = ARRAY INT OF INT;")
             self.stack.append("main")
             print("Found main entry, start constructing SMT constraints!")
 
@@ -84,8 +94,6 @@ class SymbolicExecutor(ast.NodeVisitor):
         else:
             return self.eval_builtin(node, func_name)
 
-
-
     def visit_arg(self, node: ast.arg) -> str:
         return node.arg
 
@@ -97,6 +105,14 @@ class SymbolicExecutor(ast.NodeVisitor):
 
     def visit_List(self, node: ast.List) -> Any:
         return node.elts
+        
+    def visit_For(self, node: ast.For) -> Any:
+        var = self.visit(node.target)
+        r = self.visit(node.iter)
+        print("var ", var)
+        print("r ", r)
+        for i in r:
+            self.constraints.append("i%d: INT = %d;" % (i, i))
 
     def visit_While(self, node: ast.While) -> Any:
         pass
@@ -117,3 +133,4 @@ if __name__ == "__main__":
     se = SymbolicExecutor("sort.py")
     se.dump()
     se.eval()
+    print(se.constraints)
