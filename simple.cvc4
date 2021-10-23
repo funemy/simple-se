@@ -20,5 +20,5 @@ COUNTERMODEL;
 POP;
 PUSH;
 QUERY(arr5[0] <= arr5[1]) AND (arr5[1] <= arr[2]) AND (arr5[0] <= arr[2]);
-COUNTERMODEL;
+COUNTERMODEL
 POP;
