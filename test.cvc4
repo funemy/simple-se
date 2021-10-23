@@ -1,6 +1,43 @@
-a, b, c: INT;
-ASSERT (a < b);
-ASSERT (b < c);
-QUERY (a < c);
-QUERY (c <= a);
-COUNTERMODEL; 
+% Feel free to use any scheme you can think of to do
+% mapping of the code to the CVCL expressions.  In particular,
+% you don't have to generate unique variable versions in the same
+% way I am doing it.
+
+% Initial values of variables.
+a0, b0, c0: INT;
+t0: INT;
+
+t1: INT = a0;	% New copy of t (t1) is equal to the current value of a (a0)
+a1: INT = b0;	% New value of a gets current value of b
+b1: INT = t1;	% Etc. -- this is just symbolic execution, as we saw in class
+% Now, name the values after the if statement
+a2: INT = IF (a0>b0) THEN a1 ELSE a0 ENDIF;
+b2: INT = IF (a0>b0) THEN b1 ELSE b0 ENDIF;
+t2: INT = IF (a0>b0) THEN t1 ELSE t0 ENDIF;
+
+t3: INT = b2;
+b3: INT = c0;
+c1: INT = t3;
+% Now, name the values after the 2nd if statement
+b4: INT = IF (b2>c0) THEN b3 ELSE b2 ENDIF;
+c2: INT = IF (b2>c0) THEN c1 ELSE c0 ENDIF;
+t4: INT = IF (b2>c0) THEN t3 ELSE t2 ENDIF;
+
+t5: INT = a2;
+a3: INT = b4;
+b5: INT = t5;
+% Now, name the values after the 3rd if statement
+a4: INT = IF (a2>b4) THEN a3 ELSE a2 ENDIF;
+b6: INT = IF (a2>b4) THEN b5 ELSE b4 ENDIF;
+t6: INT = IF (a2>b4) THEN t5 ELSE t4 ENDIF;
+
+% Read the documentation about the QUERY command to see
+% why there are PUSH and POP commands here.  If you leave
+% these off, strange things will happen!
+PUSH;
+QUERY (a4<b6) AND (b6<c2);
+COUNTERMODEL;
+POP;
+PUSH;
+QUERY (a4<=b6) AND (b6<=c2);
+POP;
