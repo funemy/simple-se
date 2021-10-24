@@ -1,23 +1,24 @@
-A: TYPE = ARRAY INT OF INT;
-arr: A;
 t: INT;
+arr0: INT;
+arr1: INT;
+arr2: INT;
 
-t0: INT = IF (arr[0]>arr[1]) THEN arr[0] ELSE t ENDIF;
-arr0: A = arr WITH [0] := IF (arr[0]>arr[1]) THEN arr[1] ELSE arr[0] ENDIF;
-arr1: A = arr0 WITH [1] := IF (arr[0]>arr[1]) THEN t0 ELSE arr0[1] ENDIF;
+t_0 : INT = IF (arr0>arr1) THEN arr0 ELSE t ENDIF;
+arr0_1 : INT = IF (arr0>arr1) THEN arr1 ELSE arr0 ENDIF;
+arr1_2 : INT = IF (arr0>arr1) THEN t_0 ELSE arr1 ENDIF;
 
-t1: INT = IF (arr1[1]>arr1[2]) THEN arr1[1] ELSE t ENDIF;
-arr2: A = arr1 WITH [1] := IF (arr1[1]>arr1[2]) THEN arr1[2] ELSE arr1[1] ENDIF;
-arr3: A = arr2 WITH [2] := IF (arr1[1]>arr1[2]) THEN t1 ELSE arr2[2] ENDIF;
+t_3 : INT = IF (arr1_2>arr2) THEN arr1_2 ELSE t ENDIF;
+arr1_4 : INT = IF (arr1_2>arr2) THEN arr2 ELSE arr1_2 ENDIF;
+arr2_5 : INT = IF (arr1_2>arr2) THEN t_3 ELSE arr2 ENDIF;
 
-t2: INT = IF (arr3[0]>arr3[1]) THEN arr3[0] ELSE t ENDIF;
-arr4: A = arr3 WITH [0] := IF (arr3[0]>arr3[1]) THEN arr3[1] ELSE arr3[0] ENDIF;
-arr5: A = arr4 WITH [1] := IF (arr3[0]>arr3[1]) THEN t2 ELSE arr4[1] ENDIF;
+t_6 : INT = IF (arr0_1>arr1_4) THEN arr0_1 ELSE t ENDIF;
+arr0_7 : INT = IF (arr0_1>arr1_4) THEN arr1_4 ELSE arr0_1 ENDIF;
+arr1_8 : INT = IF (arr0_1>arr1_4) THEN t_6 ELSE arr1_4 ENDIF;
 
 PUSH;
-QUERY(arr5[0] < arr5[1]) AND (arr5[1] < arr5[2]) AND (arr5[0] < arr5[2]);
+QUERY (arr0_7 < arr1_8) AND (arr1_8 < arr2_5);
 COUNTERMODEL;
 POP;
 PUSH;
-QUERY(arr5[0] <= arr5[1]) AND (arr5[1] <= arr5[2]) AND (arr5[0] <= arr5[2]);
+QUERY (arr0_7 <= arr1_8) AND (arr1_8 <= arr2_5);
 POP;

@@ -24,12 +24,75 @@ def conv_name(name) -> str:
     elif isinstance(name, str):
         return name
 
+class Constraint():
+    def __init__(self):
+        pass
+
+class Var(Constraint):
+    def __init__(self, name: str):
+        super().__init__()
+        self.name = name
+
+    def __repr__(self) -> str:
+        return self.name
+
+class Value(Constraint):
+    def __init__(self, val: Any):
+        super().__init__()
+        self.val = val
+
+    def __repr__(self) -> str:
+        return str(self.val)
+
+class Declare(Constraint):
+    def __init__(self, var: Var, ty: str):
+        super().__init__()
+        self.var = var
+        self.ty = ty
+    
+    def __repr__(self) -> str:
+        return "%s: %s;" % (repr(self.var), self.ty)
+
+class Condition(Constraint):
+    def __init__(self, left, ops, right):
+        super().__init__()
+        self.left = left
+        self.ops = ops
+        self.right = right
+    
+    def __repr__(self) -> str:
+        return "(%s%s%s)" % (self.left, conv_ops(self.ops), conv_name(self.right))
+
+class If(Constraint):
+    def __init__(self, cond: str, then, els):
+        super().__init__()
+        self.cond = cond
+        self.then = then
+        self.els = els
+
+    def __repr__(self) -> str:
+        return "IF %s THEN %s ELSE %s ENDIF;" % (self.cond, repr(self.then), repr(self.els))
+
+class Assign(Constraint):
+    def __init__(self, var, ty: str, exp):
+        super().__init__()
+        self.var = var
+        self. ty = ty
+        self.exp = exp
+
+    def __repr__(self) -> str:
+        return "%s: %s = %s;" % (repr(self.var), self.ty, repr(self.exp))
+
+
 class SymbolicExecutor(ast.NodeVisitor):
     def __init__(self, path) -> None:
         super().__init__()
-        self.funcs = {}
+        self.funcs : dict[str, ast.FunctionDef]= {}
+        # context is for concrete reasoning
         self.ctx = [{}]
         self.curctx = self.ctx[0]
+        # symbol table is for symbolic reasoning
+        self.symbols : dict[str, str] = {}
         self.stack = ["global"]
         self.sort = ""
         self.done = False
@@ -46,9 +109,10 @@ class SymbolicExecutor(ast.NodeVisitor):
     def ismain(self, left: str, ops, right : List[str]) -> bool:
         if len(ops) == 1 and len(right) == 1:
             return left == '__name__' and right[0] == '__main__'
+        return False
 
-    def uid(self) -> int:
-        uid = self.count
+    def uid(self) -> str:
+        uid = "_%d" % self.count
         self.count += 1
         return uid
 
@@ -90,14 +154,20 @@ class SymbolicExecutor(ast.NodeVisitor):
         if self.ismain(left, node.ops, right):
             # we found the main entry
             # start construct SMT constraints
-            self.constraints = []
-            self.constraints.append("A: TYPE = ARRAY INT OF INT;")
+            self.constraints : List[str] = []
+            # self.constraints.append("A: TYPE = ARRAY INT OF INT;")
             self.stack.append("main")
             print("Found main entry, start constructing SMT constraints!")
         else:
-            return (left, node.ops, right)
+            if self.sort:
+                r = conv_name(right)
+                return Condition(self.symbols[left], node.ops, self.symbols[r])
+            return Condition(left, node.ops, right)
 
     def visit_Name(self, node: ast.Name) -> str:
+        if self.sort:
+            if node.id not in self.symbols:
+                self.symbols[node.id] = node.id
         return node.id
 
     def visit_Constant(self, node: ast.Constant) -> Any:
@@ -120,8 +190,9 @@ class SymbolicExecutor(ast.NodeVisitor):
                 print("Found sorting function!")
                 self.sort = func_name
                 # we assume the first arg of sort function is the array
-                self.constraints.append("%s : A" % params[0])
-                self.curctx[params[0]] = params[0]
+                # self.constraints.append("%s : A" % params[0])
+                for p in params:
+                    self.symbols[p] = p
             res : List[str] = []
             for stmt in func.body:
                 r = self.visit(stmt)
@@ -141,31 +212,37 @@ class SymbolicExecutor(ast.NodeVisitor):
         name = self.visit(node.targets[0])
         val = self.visit(node.value)
         self.curctx[name] = val
-        print(self.curctx)
+        if self.sort:
+            self.symbols[name] = name + self.uid()
+        # print(self.curctx)
+        print(self.symbols)
         return (conv_name(name), conv_name(val))
 
     def visit_If(self, node: ast.If) -> Any:
         if not self.sort:
             self.generic_visit(node)
             return
-        body = list(map(self.visit, node.body))
         test = self.visit(node.test)
-        test = "(%s%s%s)" % (conv_name(test[0]), conv_ops(test[1]), conv_name(test[2]))
+        body = list(map(self.visit, node.body))
         cons = []
         for b in body:
-            c = "%s : INT = IF %s THEN %s ELSE %s ENDIF;" % (b[0], test, b[1], b[0])
+            c = "%s : INT = IF %s THEN %s ELSE %s ENDIF;" % (self.symbols[b[0]], test, self.symbols[b[1]], self.symbols[b[0]])
             cons.append(c)
         return cons
 
     def visit_List(self, node: ast.List) -> Any:
         return node.elts
 
-    def visit_Subscript(self, node: ast.Subscript) -> Tuple[str, str]:
+    def visit_Subscript(self, node: ast.Subscript) -> str:
         name = self.visit(node.value)
         idx = self.visit(node.slice)
+        sym = self.symbols[name] + str(idx)
+        if self.sort:
+            if sym not in self.symbols:
+                self.symbols[sym] = sym
         # print("name: ", name)
         # print("idx: ", idx)
-        return (self.curctx[name], idx)
+        return sym
         
     def visit_For(self, node: ast.For) -> Any:
         var = self.visit(node.target)
