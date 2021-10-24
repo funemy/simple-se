@@ -153,7 +153,7 @@ class SymbolicExecutor(ast.NodeVisitor):
         test = "(%s%s%s)" % (conv_name(test[0]), conv_ops(test[1]), conv_name(test[2]))
         cons = []
         for b in body:
-            c = "%s : INT = IF %s THEN %s ELSE %s;" % (b[0], test, b[1], b[0])
+            c = "%s : INT = IF %s THEN %s ELSE %s ENDIF;" % (b[0], test, b[1], b[0])
             cons.append(c)
         return cons
 
