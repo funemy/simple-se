@@ -15,10 +15,9 @@ arr4: A = arr3 WITH [0] := IF (arr3[0]>arr3[1]) THEN arr3[1] ELSE arr3[0] ENDIF;
 arr5: A = arr4 WITH [1] := IF (arr3[0]>arr3[1]) THEN t2 ELSE arr4[1] ENDIF;
 
 PUSH;
-QUERY(arr5[0] < arr5[1]) AND (arr5[1] < arr[2]) AND (arr5[0] < arr[2]);
+QUERY(arr5[0] < arr5[1]) AND (arr5[1] < arr5[2]) AND (arr5[0] < arr5[2]);
 COUNTERMODEL;
 POP;
 PUSH;
-QUERY(arr5[0] <= arr5[1]) AND (arr5[1] <= arr[2]) AND (arr5[0] <= arr[2]);
-COUNTERMODEL
+QUERY(arr5[0] <= arr5[1]) AND (arr5[1] <= arr5[2]) AND (arr5[0] <= arr5[2]);
 POP;
