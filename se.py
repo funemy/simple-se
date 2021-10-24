@@ -122,14 +122,14 @@ class SymbolicExecutor(ast.NodeVisitor):
                 # we assume the first arg of sort function is the array
                 self.constraints.append("%s : A" % params[0])
                 self.curctx[params[0]] = params[0]
-            res = []
+            res : List[str] = []
             for stmt in func.body:
-                print(stmt)
                 r = self.visit(stmt)
                 if r:
                     res = res + r
             if self.done:
-                print("\n".join(res))
+                self.constraints += res
+                print("\n".join(self.constraints))
         else:
             return self.eval_builtin(node, func_name)
 
@@ -141,7 +141,7 @@ class SymbolicExecutor(ast.NodeVisitor):
         name = self.visit(node.targets[0])
         val = self.visit(node.value)
         self.curctx[name] = val
-        # print(self.curctx)
+        print(self.curctx)
         return (conv_name(name), conv_name(val))
 
     def visit_If(self, node: ast.If) -> Any:
@@ -192,4 +192,3 @@ if __name__ == "__main__":
     se = SymbolicExecutor("simple.py")
     se.dump()
     se.eval()
-    print(se.constraints)
