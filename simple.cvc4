@@ -3,17 +3,19 @@ arr0: INT;
 arr1: INT;
 arr2: INT;
 
-t_0 : INT = IF (arr0>arr1) THEN arr0 ELSE t ENDIF;
-arr0_1 : INT = IF (arr0>arr1) THEN arr1 ELSE arr0 ENDIF;
-arr1_2 : INT = IF (arr0>arr1) THEN t_0 ELSE arr1 ENDIF;
-
-t_3 : INT = IF (arr1_2>arr2) THEN arr1_2 ELSE t ENDIF;
-arr1_4 : INT = IF (arr1_2>arr2) THEN arr2 ELSE arr1_2 ENDIF;
-arr2_5 : INT = IF (arr1_2>arr2) THEN t_3 ELSE arr2 ENDIF;
-
-t_6 : INT = IF (arr0_1>arr1_4) THEN arr0_1 ELSE t ENDIF;
-arr0_7 : INT = IF (arr0_1>arr1_4) THEN arr1_4 ELSE arr0_1 ENDIF;
-arr1_8 : INT = IF (arr0_1>arr1_4) THEN t_6 ELSE arr1_4 ENDIF;
+arr0: INT;
+t: INT;
+t_0: INT = IF (arr0>arr1) THEN arr0 ELSE t ENDIF;
+arr1: INT;
+arr0_1: INT = IF (arr0>arr1) THEN arr1 ELSE arr0 ENDIF;
+arr1_2: INT = IF (arr0>arr1) THEN t_0 ELSE arr1 ENDIF;
+t_3: INT = IF (arr1_2>arr2) THEN arr1_2 ELSE t_0 ENDIF;
+arr2: INT;
+arr1_4: INT = IF (arr1_2>arr2) THEN arr2 ELSE arr1_2 ENDIF;
+arr2_5: INT = IF (arr1_2>arr2) THEN t_0 ELSE arr2 ENDIF;
+t_6: INT = IF (arr0_1>arr1) THEN arr0_1 ELSE t_0 ENDIF;
+arr0_7: INT = IF (arr0_1>arr1) THEN arr1_2 ELSE arr0_1 ENDIF;
+arr1_8: INT = IF (arr0_1>arr1) THEN t_0 ELSE arr1_2 ENDIF;
 
 PUSH;
 QUERY (arr0_7 < arr1_8) AND (arr1_8 < arr2_5);
