@@ -158,7 +158,8 @@ class ConstraintVisitor():
     def visit_Condition(self, node: Condition):
         print("Condition")
         self.visit(node.left)
-        self.visit(node.right)
+        # FIXME: unsound
+        self.visit(node.right[0])
 
     def visit_IfGuard(self, node: IfGuard):
         print("IfGuard")
