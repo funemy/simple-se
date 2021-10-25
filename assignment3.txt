@@ -1,0 +1,51 @@
+CPSC513 -- Assignment 3
+
+# Instruction:
+To run my project, make sure `python3` is installed.
+Then use either command below to generate SMT constraints:
+- `make run`
+- `python3 se.py sort.py`
+The generated SMT constraint file will be named as `out.cvc4`.
+Then running:
+- `cvc4 -im out.cvc4`
+to see the SMT solving result
+
+# Overview:
+In this assignment, I wrote a simple symbolic executor for a subset of python3, 
+and successfully generated the corresponding SMT constraints in CVC4 that can 
+verify the output array is correctly sorted.
+
+As it turns out, my solution combines constant folding and symbolic execution.
+As long as the input array is statically given in the input python file, my symbolic
+executor will first compute its length from the AST and propagate this information
+to sorting algorithm's arguments (I assume the second argument of the sorting algorithm
+is always the length of the array).
+
+# Design and Implementation
+The reason I chose python3 as the target language is because python exposes its
+parser and AST as standard libraries. Therefore I can directly traverse the python
+AST and generate SMT constraints on valid python code.
+
+My symbolic executor in general work as below:
+1. Parse input python file in to python AST
+2. Traverse the AST to find the sorting function and the input array (and compute
+   the array size)
+3. Traverse the sorting function and generate an simplified AST that captures all
+   necessary information required to generate SMT constraints.
+4. Traverse the constraint AST to solve the naming issue (basically SSA transform?)
+   and generate the CVC4 output.
+
+# Result
+A short summary of what I have achieved:
+1. A symbolic executor for valid python3 code.
+2. Using constant folding to compute and propagate the input array length the the 
+   sorting function.
+3. Support for-loop in python , and use the computed array length for loop unrolling.
+
+To test the correctness of my implementation, I wrote two testing files:
+- simple.py is basically the same algorithm Alan gives on his website, the algorithm
+  can only sort 3 numbers and there's no for-loop in the code.
+- sort.py is a python implementation of insertion sort, I avoided using while-loop and
+  `break` to implement the function, so there's no unbounded loops. I tested my symbolic
+  executor by passing arrays whose length ranging from 3 to 18. The generated constraint 
+  files can all be solved by CVC4 successfully.

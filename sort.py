@@ -11,8 +11,8 @@ def insertion_sort(arr, l):
             
 
 if __name__ == "__main__":
-    # arr = [8,3,21,10,76,12,2,4,6,9,11,22,78,99,21]
-    arr = [8,3,21,10]
+    arr = [8,3,21,10,76,12,2,4,6,9,11,22,78,99,21, 23,44,55]
+    # arr = [8,3,21,10]
     l = len(arr)
     res = insertion_sort(arr, l)
     print(res)
