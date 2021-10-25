@@ -25,6 +25,20 @@ def conv_name(name) -> str:
     elif isinstance(name, str):
         return name
 
+def flatten(l: list):
+    res: list = []
+    flattened = True
+    for e in l:
+        if isinstance(e, list):
+            res = res + e
+            flattened = False
+        else:
+            res.append(e)
+    if flattened:
+        return res
+    else:
+        return flatten(res)
+
 # ###################################################### # 
 #                                                        #
 #                  AST for SMT Constraints               #
@@ -166,23 +180,24 @@ class ConstraintVisitor():
             self.constraints.append(repr(d))
         else:
             node.name = self.symbols[node.name]
-        print("Var: " + node.name)
+        # print("Var: " + node.name)
 
     def visit_Value(self, node: Value):
-        print("Value")
+        # print("Value")
+        pass
 
     def visit_Declare(self, node: Declare):
-        print("Declare")
+        # print("Declare")
         self.visit(node.var)
 
     def visit_Condition(self, node: Condition):
-        print("Condition")
+        # print("Condition")
         self.visit(node.left)
         # FIXME: unsound
         self.visit(node.right[0])
 
     def visit_IfGuard(self, node: IfGuard):
-        print("IfGuard")
+        # print("IfGuard")
         self.visit(node.cond)
         for s in node.stmts:
             s.exp = If(node.cond, s.exp, Var(s.var))
@@ -193,7 +208,7 @@ class ConstraintVisitor():
         self.visit(node.els)
 
     def visit_Assign(self, node: Assign):
-        print("Assign")
+        # print("Assign")
         self.visit(node.exp)
         self.visit(node.var)
         new_var = self.uid(node.var)
@@ -260,15 +275,17 @@ class SymbolicExecutor(ast.NodeVisitor):
             return len(self.curctx[arg_name])
         elif name == 'range':
             args = list(map(self.visit, node.args))
-            assert(len(args) == 2)
-            return list(range(self.resolve(args[0]), self.resolve(args[1])))
+            if len(args) == 2:
+                return list(range(self.resolve(args[0]), self.resolve(args[1])))
+            elif len(args) == 3:
+                return list(range(self.resolve(args[0]), self.resolve(args[1]), self.resolve(args[2])))
 
     def eval(self) -> None:
         self.visit(self.program)
         v = ConstraintVisitor()
         for con in self.constraints:
-            print("==============")
-            print(con)
+            # print("==============")
+            # print(con)
             con.accept(v)
         v.gen_query(self.array_name, self.array_length, False)
         v.gen_query(self.array_name, self.array_length, True)
@@ -302,9 +319,20 @@ class SymbolicExecutor(ast.NodeVisitor):
     def visit_arg(self, node: ast.arg) -> str:
         return node.arg
 
+    def visit_BinOp(self, node: ast.BinOp) -> Any:
+        if isinstance(node.op, ast.Sub):
+            return self.resolve(self.visit(node.left)) - self.resolve(self.visit(node.right))
+        elif isinstance(node.op, ast.Add):
+            return self.resolve(self.visit(node.left)) + self.resolve(self.visit(node.right))
+    
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> Any:
+        if isinstance(node.op, ast.USub):
+            return -self.resolve(self.visit(node.operand))
+
     def visit_Subscript(self, node: ast.Subscript) -> Var:
         name = self.visit(node.value)
         idx = self.visit(node.slice)
+        idx = self.resolve(idx)
         return Var(name+str(idx))
 
     def visit_Compare(self, node: ast.Compare) -> Any:
@@ -334,7 +362,7 @@ class SymbolicExecutor(ast.NodeVisitor):
             self.ctx.append(nextctx)
             self.stack.append(func_name)
             if re.match(self.target, func_name):
-                print("Found sorting function!")
+                print("Found sorting function: %s" % func_name)
                 self.sort = func_name
                 self.array_name = params[0]
                 self.array_length = self.curctx[params[1]]
@@ -381,11 +409,12 @@ class SymbolicExecutor(ast.NodeVisitor):
     def visit_For(self, node: ast.For) -> Any:
         var = self.visit(node.target)
         r = self.visit(node.iter)
+        cons = []
         for i in r:
-            var_cons = "%s%d" % (var, i)
             self.curctx[var] = i
             for stmt in node.body:
-                cons = self.visit(stmt)
+                cons.append(self.visit(stmt))
+        return flatten(cons)
 
     def visit_Return(self, node: ast.Return) -> None:
         if self.stack[-1] == self.sort:
@@ -409,5 +438,5 @@ if __name__ == "__main__":
         print("  python se.py [input] [output]")
         exit(1)
     se = SymbolicExecutor(inp, out)
-    se.dump()
+    # se.dump()
     se.eval()
