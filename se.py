@@ -1,5 +1,6 @@
 import ast
 import re
+import sys
 from typing import *
 
 def conv_ops(ops) -> str:
@@ -196,7 +197,7 @@ def unwrap(n):
 #                                                        #
 # ###################################################### #
 class SymbolicExecutor(ast.NodeVisitor):
-    def __init__(self, path) -> None:
+    def __init__(self, path, out) -> None:
         super().__init__()
         self.funcs : dict[str, ast.FunctionDef]= {}
         # context is for concrete reasoning
@@ -211,6 +212,7 @@ class SymbolicExecutor(ast.NodeVisitor):
         self.target = re.compile('.*_sort$')
         with open(path) as f:
             self.program = ast.parse(f.read())
+        self.out = out
 
     def dump(self) -> None:
         print(ast,ast.dump(self.program, indent=4))
@@ -237,13 +239,14 @@ class SymbolicExecutor(ast.NodeVisitor):
             return list(range(self.resolve(args[0]), self.resolve(args[1])))
 
     def eval(self) -> None:
-        print("start symbolic evaluation")
         self.visit(self.program)
         cons = self.gen_constraints()
-        print("Final:")
+        res = ""
         for c in cons:
-            print(c)
-        print("end symbolic evaluation")
+            res += (c + "\n")
+        f = open(self.out, 'w')
+        f.write(res)
+        f.close()
 
     # ###################################################### # 
     #                                                        #
@@ -368,7 +371,18 @@ class SymbolicExecutor(ast.NodeVisitor):
 
 
 if __name__ == "__main__":
-    # se = SymbolicExecutor("sort.py")
-    se = SymbolicExecutor("simple.py")
+    args = sys.argv
+    if len(args) == 2:
+        inp = args[1]
+        out = "out.cvc4"
+    elif len(args) == 3:
+        inp = args[1]
+        out = args[2]
+    else:
+        print("Usage:")
+        print("  python se.py [input]")
+        print("  python se.py [input] [output]")
+        exit(1)
+    se = SymbolicExecutor(inp, out)
     se.dump()
     se.eval()

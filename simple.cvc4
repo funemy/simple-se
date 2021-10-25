@@ -1,8 +1,3 @@
-t: INT;
-arr0: INT;
-arr1: INT;
-arr2: INT;
-
 arr0: INT;
 t: INT;
 t_0: INT = IF (arr0>arr1) THEN arr0 ELSE t ENDIF;
