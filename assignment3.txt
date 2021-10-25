@@ -1,14 +1,14 @@
 CPSC513 -- Assignment 3
 
 # Instruction:
-To run my project, make sure `python3` is installed.
-Then use either command below to generate SMT constraints:
-- `make run`
-- `python3 se.py sort.py`
-The generated SMT constraint file will be named as `out.cvc4`.
-Then running:
-- `cvc4 -im out.cvc4`
-to see the SMT solving result
+1. To run my project, make sure `python3` is installed.
+2. Put `se.py`, `simple.py`, `sort.py` and `Makefile` under the same directory.
+2. Use **either** command below to generate the CVC4 file:
+    - `make run`
+    - OR `python3 se.py sort.py`
+3. The generated SMT constraint file will be named as `out.cvc4`.
+4. Run `cvc4 -im out.cvc4`.
+5. See the SMT solving results.
 
 # Overview:
 In this assignment, I wrote a simple symbolic executor for a subset of python3, 
