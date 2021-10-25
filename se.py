@@ -123,6 +123,26 @@ class ConstraintVisitor():
         self.count += 1
         return uid
 
+    def gen_query(self, array: str, length: int, lte: bool) -> None:
+        self.constraints.append("")
+        self.constraints.append("PUSH;")
+        if lte:
+            op = "<="
+        else:
+            op = "<"
+        query = "QUERY"
+        for i in range(length-1):
+            first = "%s%d" % (array, i)
+            second = "%s%d" % (array, i+1)
+            if i < length-2:
+                query += " (%s %s %s) AND" % (self.symbols[first], op, self.symbols[second])
+            else:
+                query += " (%s < %s);" % (self.symbols[first], self.symbols[second])
+        self.constraints.append(query)
+        if not lte:
+            self.constraints.append("COUNTERMODEL;")
+        self.constraints.append("POP;")
+
     def visit(self, node):
         if isinstance(node, Var):
             self.visit_Var(node)
@@ -177,7 +197,7 @@ class ConstraintVisitor():
         self.visit(node.exp)
         self.visit(node.var)
         new_var = self.uid(node.var)
-        self.symbols[node.var.name] = new_var
+        self.symbols[node.var.name.split("_")[0]] = new_var
         self.symbols[new_var] = new_var
         node.var.name = new_var
         self.constraints.append(repr(node))
@@ -206,7 +226,6 @@ class SymbolicExecutor(ast.NodeVisitor):
         self.curctx = self.ctx[0]
         # symbol table is for symbolic reasoning
         self.stack = ["global"]
-        self.sort = ""
         self.done = False
         self.loop = False
         # we are interested in sorting algorithm with name "xxx_sort"
@@ -214,6 +233,10 @@ class SymbolicExecutor(ast.NodeVisitor):
         with open(path) as f:
             self.program = ast.parse(f.read())
         self.out = out
+        # some specific knowledge for sorting algorithm
+        self.sort = ""
+        self.array_name = ""
+        self.array_length = 0
 
     def dump(self) -> None:
         print(ast,ast.dump(self.program, indent=4))
@@ -230,6 +253,7 @@ class SymbolicExecutor(ast.NodeVisitor):
         elif isinstance(val, str):
             return self.curctx[val]
     
+    # evaluate python's built in functions
     def eval_builtin(self, node: ast.Call, name: str) -> Any:
         if name == 'len':
             arg_name = self.visit(node.args[0])
@@ -241,9 +265,15 @@ class SymbolicExecutor(ast.NodeVisitor):
 
     def eval(self) -> None:
         self.visit(self.program)
-        cons = self.gen_constraints()
+        v = ConstraintVisitor()
+        for con in self.constraints:
+            print("==============")
+            print(con)
+            con.accept(v)
+        v.gen_query(self.array_name, self.array_length, False)
+        v.gen_query(self.array_name, self.array_length, True)
         res = ""
-        for c in cons:
+        for c in v.constraints:
             res += (c + "\n")
         f = open(self.out, 'w')
         f.write(res)
@@ -254,14 +284,6 @@ class SymbolicExecutor(ast.NodeVisitor):
     #    Visitor functions below for generating SMT AST      #
     #                                                        #
     # ###################################################### #
-
-    def gen_constraints(self):
-        v = ConstraintVisitor()
-        for c in self.constraints:
-            print("==============")
-            print(c)
-            c.accept(v)
-        return v.constraints
 
     # save all function definitions into the context
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
@@ -314,6 +336,8 @@ class SymbolicExecutor(ast.NodeVisitor):
             if re.match(self.target, func_name):
                 print("Found sorting function!")
                 self.sort = func_name
+                self.array_name = params[0]
+                self.array_length = self.curctx[params[1]]
                 # we assume the first arg of sort function is the array
                 # self.constraints.append("%s : A" % params[0])
             res : List[Constraint] = []
