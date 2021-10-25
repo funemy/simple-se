@@ -2,7 +2,7 @@ def insertion_sort(arr, l):
     for i in range(1, l):
         tmp = arr[i]
         k = i-1
-        for j in range(0, i)[::-1]:
+        for j in range(i-1, -1, -1):
             if tmp < arr[j]:
                 arr[j+1] = arr[j]
                 k = k - 1
