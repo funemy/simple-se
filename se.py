@@ -39,7 +39,7 @@ def flatten(l: list):
     else:
         return flatten(res)
 
-# ###################################################### # 
+# ###################################################### #
 #                                                        #
 #                  AST for SMT Constraints               #
 #                                                        #
@@ -73,7 +73,7 @@ class Declare(Constraint):
         super().__init__()
         self.var = var
         self.ty = ty
-    
+
     def __repr__(self) -> str:
         return "%s: %s;" % (self.var, self.ty)
 
@@ -83,7 +83,7 @@ class Condition(Constraint):
         self.left = left
         self.ops = ops
         self.right = right
-    
+
     def __repr__(self) -> str:
         return "(%s%s%s)" % (self.left, conv_ops(self.ops), conv_name(self.right))
 
@@ -121,7 +121,7 @@ class IfGuard(Constraint):
         return res
 
 
-# ###################################################### # 
+# ###################################################### #
 #                                                        #
 #             Visitor for SMT Constraint AST             #
 #                                                        #
@@ -172,7 +172,7 @@ class ConstraintVisitor():
             self.visit_IfGuard(node)
         elif isinstance(node, Assign):
             self.visit_Assign(node)
-    
+
     def visit_Var(self, node: Var):
         if node.name not in self.symbols:
             self.symbols[node.name] = node.name
@@ -202,7 +202,7 @@ class ConstraintVisitor():
         for s in node.stmts:
             s.exp = If(node.cond, s.exp, Var(s.var))
             self.visit(s)
-    
+
     def visit_If(self, node: If):
         self.visit(node.then)
         self.visit(node.els)
@@ -227,7 +227,7 @@ def unwrap(n):
     else:
         return n
 
-# ###################################################### # 
+# ###################################################### #
 #                                                        #
 #  Python AST Visitor for generating SMT Constraint AST  #
 #                                                        #
@@ -267,7 +267,7 @@ class SymbolicExecutor(ast.NodeVisitor):
             return val
         elif isinstance(val, str):
             return self.curctx[val]
-    
+
     # evaluate python's built in functions
     def eval_builtin(self, node: ast.Call, name: str) -> Any:
         if name == 'len':
@@ -275,6 +275,8 @@ class SymbolicExecutor(ast.NodeVisitor):
             return len(self.curctx[arg_name])
         elif name == 'range':
             args = list(map(self.visit, node.args))
+            print(node.args)
+            print(args)
             if len(args) == 2:
                 return list(range(self.resolve(args[0]), self.resolve(args[1])))
             elif len(args) == 3:
@@ -296,7 +298,7 @@ class SymbolicExecutor(ast.NodeVisitor):
         f.write(res)
         f.close()
 
-    # ###################################################### # 
+    # ###################################################### #
     #                                                        #
     #    Visitor functions below for generating SMT AST      #
     #                                                        #
@@ -313,6 +315,9 @@ class SymbolicExecutor(ast.NodeVisitor):
     def visit_Constant(self, node: ast.Constant) -> Any:
         return node.value
 
+    def visit_Num(self, node: ast.Num) -> Any:
+        return node.value
+
     def visit_List(self, node: ast.List) -> Any:
         return node.elts
 
@@ -324,7 +329,7 @@ class SymbolicExecutor(ast.NodeVisitor):
             return self.resolve(self.visit(node.left)) - self.resolve(self.visit(node.right))
         elif isinstance(node.op, ast.Add):
             return self.resolve(self.visit(node.left)) + self.resolve(self.visit(node.right))
-    
+
     def visit_UnaryOp(self, node: ast.UnaryOp) -> Any:
         if isinstance(node.op, ast.USub):
             return -self.resolve(self.visit(node.operand))
